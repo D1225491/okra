@@ -3,18 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <title>黃秋葵價錢查詢</title>
-  <link rel="stylesheet" href="/stylesheets/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    table, th, td { border: 1px solid #333; border-collapse: collapse; padding: 6px 12px; }
-    form { margin-bottom: 20px; text-align: center; }
-    #content { display: flex; align-items: flex-start; gap: 120px; }
-    #chartContainer { width: 900px; min-width: 600px; max-width: 900px; margin-top: 0; }
-    h1 { text-align: center; }
+    body {
+      font-family: "Noto Sans TC", sans-serif;
+      background-color: #f6fff6;
+      color: #333;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #2e7d32;
+    }
+    form {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    select, input[type="number"], button {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin: 5px;
+    }
+    button {
+      background-color: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #388e3c;
+    }
+    #content {
+      display: flex;
+      align-items: flex-start;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 6px 12px;
+      text-align: center;
+    }
+    thead {
+      background-color: #d0f0d0;
+    }
+    #chartContainer {
+      width: 900px;
+      max-width: 100%;
+    }
   </style>
 </head>
-
-
 <body>
 <h1>黃秋葵價錢查詢</h1>
 
@@ -43,15 +92,18 @@
   <button type="submit">查詢</button>
 </form>
 
-<!-- 結果表格和圖表橫向排列 -->
+<!-- 資料區塊 -->
 <div id="content">
-  <table id="pricesTable">
-    <thead>
-    <tr><th>年分</th><th>月份</th><th>價錢 (元/把)</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <div id="chartContainer">
+  <div class="card" style="min-width: 300px;">
+    <table id="pricesTable">
+      <thead>
+      <tr><th>年分</th><th>月份</th><th>價錢 (元/把)</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card" id="chartContainer">
     <canvas id="priceChart"></canvas>
   </div>
 </div>
@@ -78,16 +130,12 @@
   }
 
   function renderChart(data) {
-    const sorted = data.slice().sort((a, b) => {
-      return a.year !== b.year ? a.year - b.year : a.month - b.month;
-    });
-
+    const sorted = data.slice().sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month);
     const labels = sorted.map(row => `${row.year}/${row.month}`);
     const prices = sorted.map(row => row.price);
-
     const ctx = document.getElementById('priceChart').getContext('2d');
 
-    if (chart) chart.destroy(); // 避免重疊
+    if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
       type: 'line',
