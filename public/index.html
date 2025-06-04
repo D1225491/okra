@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>黃秋葵價錢查詢</title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    table, th, td { border: 1px solid #333; border-collapse: collapse; padding: 6px 12px; }
+    form { margin-bottom: 20px; }
+    #content { display: flex; align-items: flex-start; gap: 32px; }
+    #chartContainer { width: 900px; min-width: 600px; max-width: 900px; margin-top: 0; }
+  </style>
+</head>
+
+<body>
+<h1>黃秋葵價錢查詢</h1>
+
+<!-- 查詢表單 -->
+<form id="filterForm">
+  <label>年分:
+    <select id="year">
+      <option value="">全部</option>
+      <option>2020</option>
+      <option>2021</option>
+      <option>2022</option>
+      <option>2023</option>
+      <option>2024</option>
+      <option>2025</option>
+    </select>
+  </label>
+  <label>月份:
+    <select id="month">
+      <option value="">全部</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option>
+      <option>5</option><option>6</option><option>7</option><option>8</option>
+      <option>9</option><option>10</option><option>11</option><option>12</option>
+    </select>
+  </label>
+  <label>價錢上限: <input type="number" id="maxPrice" min="0" step="0.01"></label>
+  <button type="submit">查詢</button>
+</form>
+
+<!-- 結果表格和圖表橫向排列 -->
+<div id="content">
+  <table id="pricesTable">
+    <thead>
+    <tr><th>年分</th><th>月份</th><th>價錢 (元/把)</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="chartContainer">
+    <canvas id="priceChart"></canvas>
+  </div>
+</div>
+
+<script>
+  let allData = [];
+  let chart = null;
+
+  async function loadPrices() {
+    const res = await fetch('/api/prices');
+    allData = await res.json();
+    renderTable(allData);
+    renderChart(allData);
+  }
+
+  function renderTable(data) {
+    const tbody = document.querySelector('#pricesTable tbody');
+    tbody.innerHTML = '';
+    data.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${row.year}</td><td>${row.month}</td><td>${row.price}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderChart(data) {
+    const sorted = data.slice().sort((a, b) => {
+      return a.year !== b.year ? a.year - b.year : a.month - b.month;
+    });
+
+    const labels = sorted.map(row => `${row.year}/${row.month}`);
+    const prices = sorted.map(row => row.price);
+
+    const ctx = document.getElementById('priceChart').getContext('2d');
+
+    if (chart) chart.destroy(); // 避免重疊
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '價格 (元/把)',
+          data: prices,
+          borderColor: 'green',
+          backgroundColor: 'rgba(0, 128, 0, 0.1)',
+          tension: 0.3,
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          y: { beginAtZero: false, title: { display: true, text: '元/把' } },
+          x: { title: { display: true, text: '時間（月）' } }
+        }
+      }
+    });
+  }
+
+  document.getElementById('filterForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const year = document.getElementById('year').value;
+    const month = document.getElementById('month').value;
+    const maxPrice = parseFloat(document.getElementById('maxPrice').value);
+
+    const filtered = allData.filter(row => {
+      return (!year || row.year == year) &&
+              (!month || row.month == month) &&
+              (isNaN(maxPrice) || row.price <= maxPrice);
+    });
+
+    renderTable(filtered);
+    renderChart(filtered);
+  });
+
+  loadPrices();
+</script>
+</body>
+</html>
